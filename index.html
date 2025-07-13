@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบอัพโหลดไฟล์ โรงเรียนบ้านนานวล</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .file-drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .upload-progress {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="text-center mb-8">
+            <img src="https://img5.pic.in.th/file/secure-sv1/273218374_306049724897300_8948544915894559738_n.png" alt="โรงเรียนบ้านนานวล Logo" class="mx-auto h-24 mb-4">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">ระบบอัพโหลดไฟล์ โรงเรียนบ้านนานวล</h1>
+            <p class="text-gray-600">อัพโหลดไฟล์และรับ QR Code สำหรับดาวน์โหลด</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                <input type="text" id="userName" placeholder="กรุณาระบุชื่อของคุณ" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <div class="file-drop-zone rounded-lg p-8 text-center mb-6" id="dropZone">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <p class="text-lg font-medium text-gray-700 mb-2">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</p>
+                <p class="text-sm text-gray-500 mb-4">รองรับ: .doc, .docx, .pdf, .xlsx, .xls, .pptx, .png, .jpg</p>
+                <input type="file" id="fileInput" multiple accept=".doc,.docx,.pdf,.xlsx,.xls,.pptx,.png,.jpg,.jpeg" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    เลือกไฟล์
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">หรือใส่ URL ของไฟล์</label>
+                <div class="flex gap-2">
+                    <input type="url" id="fileUrl" placeholder="https://example.com/file.pdf" 
+                            class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button onclick="addUrlFile()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                        เพิ่ม URL
+                    </button>
+                </div>
+            </div>
+
+            <div id="filesList" class="mb-6 hidden">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">ไฟล์ที่เลือก:</h3>
+                <div id="filesContainer" class="space-y-2"></div>
+            </div>
+
+            <button onclick="uploadFiles()" id="uploadBtn" 
+                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 rounded-lg font-semibold text-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                🚀 อัพโหลดไฟล์ทั้งหมด
+            </button>
+
+            <div id="progressContainer" class="mt-4 hidden">
+                <div class="bg-gray-200 rounded-full h-3">
+                    <div id="progressBar" class="upload-progress bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="progressText" class="text-sm text-gray-600 mt-2 text-center">กำลังอัพโหลด...</p>
+            </div>
+        </div>
+
+        <div id="resultsSection" class="hidden">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">✅ อัพโหลดสำเร็จ!</h2>
+                <div id="resultsContainer" class="space-y-6"></div>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8">
+            <div class="flex items-center">
+                <svg class="h-5 w-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-blue-800">ระบบพร้อมใช้งาน!</p>
+                    <p class="text-sm text-blue-700">ไฟล์จะถูกอัพโหลดไปยัง Google Drive และบันทึกข้อมูลลง Google Sheets อัตโนมัติ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- QR Code generation is now handled by Google Apps Script ---
+        // The client-side generateQRCodeToCanvas function is no longer needed here.
+        // The Apps Script will return the QR Code as a Base64 image directly.
+
+        let selectedFiles = [];
+        let urlFiles = [];
+
+        // Drag and drop functionality
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            addFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+        });
+
+        function addFiles(files) {
+            const validExtensions = ['.doc', '.docx', '.pdf', '.xlsx', '.xls', '.pptx', '.png', '.jpg', '.jpeg'];
+            
+            files.forEach(file => {
+                const extension = '.' + file.name.split('.').pop().toLowerCase();
+                if (validExtensions.includes(extension)) {
+                    selectedFiles.push({
+                        file: file,
+                        name: file.name,
+                        size: file.size,
+                        type: extension,
+                        source: 'file'
+                    });
+                } else {
+                    showMessageBox(`ไฟล์ ${file.name} ไม่รองรับ กรุณาเลือกไฟล์ที่รองรับเท่านั้น`);
+                }
+            });
+            
+            updateFilesList();
+        }
+
+        function addUrlFile() {
+            const urlInput = document.getElementById('fileUrl');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showMessageBox('กรุณาใส่ URL ของไฟล์');
+                return;
+            }
+
+            try {
+                const urlObj = new URL(url);
+                const fileName = urlObj.pathname.split('/').pop() || 'unknown-file';
+                const extension = '.' + fileName.split('.').pop().toLowerCase();
+                
+                const validExtensions = ['.doc', '.docx', '.pdf', '.xlsx', '.xls', '.pptx', '.png', '.jpg', '.jpeg'];
+                
+                if (!validExtensions.includes(extension)) {
+                    showMessageBox('URL ต้องชี้ไปยังไฟล์ที่รองรับเท่านั้น');
+                    return;
+                }
+
+                urlFiles.push({
+                    url: url,
+                    name: fileName,
+                    type: extension,
+                    source: 'url'
+                });
+                
+                urlInput.value = '';
+                updateFilesList();
+            } catch (error) {
+                showMessageBox('URL ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+            }
+        }
+
+        function updateFilesList() {
+            const filesList = document.getElementById('filesList');
+            const filesContainer = document.getElementById('filesContainer');
+            
+            if (selectedFiles.length === 0 && urlFiles.length === 0) {
+                filesList.classList.add('hidden');
+                return;
+            }
+            
+            filesList.classList.remove('hidden');
+            filesContainer.innerHTML = '';
+            
+            selectedFiles.forEach((fileObj, index) => {
+                const fileItem = createFileItem(fileObj, 'file', index);
+                filesContainer.appendChild(fileItem);
+            });
+            
+            urlFiles.forEach((fileObj, index) => {
+                const fileItem = createFileItem(fileObj, 'url', index);
+                filesContainer.appendChild(fileItem);
+            });
+        }
+
+        function createFileItem(fileObj, source, index) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg';
+            
+            const sizeText = source === 'file' ? `(${formatFileSize(fileObj.size)})` : '(URL)';
+            
+            div.innerHTML = `
+                <div class="flex items-center">
+                    <span class="text-2xl mr-3">${getFileIcon(fileObj.type)}</span>
+                    <div>
+                        <p class="font-medium text-gray-800">${fileObj.name}</p>
+                        <p class="text-sm text-gray-500">${fileObj.type.toUpperCase()} ${sizeText}</p>
+                    </div>
+                </div>
+                <button onclick="removeFile('${source}', ${index})" 
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            `;
+            
+            return div;
+        }
+
+        function removeFile(source, index) {
+            if (source === 'file') {
+                selectedFiles.splice(index, 1);
+            } else {
+                urlFiles.splice(index, 1);
+            }
+            updateFilesList();
+        }
+
+        function getFileIcon(type) {
+            const icons = {
+                '.pdf': '📄',
+                '.doc': '📝',
+                '.docx': '📝',
+                '.xlsx': '📊',
+                '.xls': '📊',
+                '.pptx': '📊',
+                '.png': '🖼️',
+                '.jpg': '🖼️',
+                '.jpeg': '🖼️'
+            };
+            return icons[type] || '📎';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function uploadFiles() {
+            const userName = document.getElementById('userName').value.trim();
+            
+            if (!userName) {
+                showMessageBox('กรุณาระบุชื่อผู้ใช้');
+                return;
+            }
+            
+            if (selectedFiles.length === 0 && urlFiles.length === 0) {
+                showMessageBox('กรุณาเลือกไฟล์หรือใส่ URL อย่างน้อย 1 รายการ');
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            uploadBtn.disabled = true;
+            progressContainer.classList.remove('hidden');
+            
+            const allFiles = [...selectedFiles, ...urlFiles];
+            const results = [];
+            
+            for (let i = 0; i < allFiles.length; i++) {
+                const fileObj = allFiles[i];
+                const progress = ((i + 1) / allFiles.length) * 100;
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `กำลังอัพโหลด ${fileObj.name} (${i + 1}/${allFiles.length})`;
+                
+                const result = await uploadToGoogleAppsScript(fileObj, userName);
+                results.push(result);
+            }
+            
+            progressText.textContent = 'เสร็จสิ้น!';
+            
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                displayResults(results);
+                resetForm();
+            }, 1000);
+        }
+
+       async function uploadToGoogleAppsScript(fileObj, userName) {
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbxFoXEpGqidNAgcPAWpRHaHG_gE40nbpQSAs6tIK5-21o6cPpfE4dT_hxPNEoqRZoTb/exec'; // ตรวจให้ถูกต้อง
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'uploadFile'); 
+                formData.append('userName', userName);
+                formData.append('fileName', fileObj.name);
+                formData.append('fileType', fileObj.type);
+                formData.append('source', fileObj.source || 'file');
+
+                if (fileObj.source === 'file' || !fileObj.source) {
+                    const base64Data = await fileToBase64(fileObj.file);
+                    formData.append('fileData', base64Data);
+                    formData.append('mimeType', fileObj.file.type);
+                } else {
+                    formData.append('fileUrl', fileObj.url);
+                }
+
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: formData,
+                    redirect: 'follow'
+                });
+
+                const responseText = await response.text();
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse JSON response:', responseText);
+                    throw new Error('Invalid response from server.');
+                }
+
+                if (result.success) {
+                    return {
+                        fileName: result.fileName,
+                        uploadDate: result.uploadDate,
+                        uploadTime: result.uploadTime,
+                        fileType: fileObj.type,
+                        userName: userName,
+                        driveUrl: result.driveUrl,
+                        qrCode: result.qrCode || '',
+                        source: result.source,
+                        success: true
+                    };
+                } else {
+                    throw new Error(result.error || 'Unknown error from server.');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                return {
+                    fileName: fileObj.name,
+                    error: `การเชื่อมต่อล้มเหลว: ${error.message}`,
+                    success: false
+                };
+            }
+        }
+
+        // Helper function to convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function displayResults(results) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            resultsContainer.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                
+                if (result.success) {
+                    resultDiv.className = 'border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-green-50 to-blue-50';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    ${getFileIcon(result.fileType)} ${result.fileName}
+                                </h3>
+                                <div class="space-y-2 text-sm">
+                                    <p><span class="font-medium">ผู้อัพโหลด:</span> ${result.userName}</p>
+                                    <p><span class="font-medium">วันที่:</span> ${result.uploadDate} ${result.uploadTime}</p>
+                                    <p><span class="font-medium">ประเภทไฟล์:</span> ${result.fileType.toUpperCase()}</p>
+                                    <p><span class="font-medium">แหล่งที่มา:</span> ${result.source === 'file' ? 'ไฟล์ที่อัพโหลด' : 'URL'}</p>
+                                    <p class="mt-2">
+                                        <a href="${result.driveUrl}" target="_blank" 
+                                           class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
+                                            <svg class="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            ดูไฟล์ใน Google Drive
+                                        </a>
+                                    </p>
+                                </div>
+                                <div class="mt-4">
+                                    <a href="${result.qrCode}" download="qrcode_${result.fileName}.png"
+                                       class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                        <svg class="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 3a1 1 0 011 1v4.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 011.414-1.414L9 8.586V4a1 1 0 011-1z" clip-rule="evenodd" fill-rule="evenodd"/>
+                                            <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" fill-rule="evenodd"/>
+                                        </svg>
+                                        ดาวน์โหลด QR Code
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <p class="font-medium text-gray-700 mb-3">QR Code สำหรับดาวน์โหลด</p>
+                                <img src="${result.qrCode}" alt="QR Code" class="mx-auto border border-gray-300 rounded-lg">
+                                <p class="text-xs text-gray-500 mt-2">สแกน QR Code เพื่อดาวน์โหลดไฟล์</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.className = 'border border-red-200 rounded-lg p-6 bg-gradient-to-r from-red-50 to-pink-50';
+                    
+                    resultDiv.innerHTML = `
+                        <div class="flex items-center">
+                            <svg class="h-8 w-8 text-red-500 mr-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>
+                                <h3 class="text-lg font-semibold text-red-800 mb-2">❌ อัพโหลดไม่สำเร็จ: ${result.fileName}</h3>
+                                <p class="text-red-600">${result.error}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                resultsContainer.appendChild(resultDiv);
+            });
+            
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            selectedFiles = [];
+            urlFiles = [];
+            document.getElementById('userName').value = '';
+            document.getElementById('fileUrl').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadBtn').disabled = false;
+            updateFilesList();
+        }
+
+        // Custom message box function to replace alert()
+        function showMessageBox(message) {
+            const existingMessageBox = document.getElementById('customMessageBox');
+            if (existingMessageBox) {
+                existingMessageBox.remove();
+            }
+
+            const messageBox = document.createElement('div');
+            messageBox.id = 'customMessageBox';
+            messageBox.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+            messageBox.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-auto text-center">
+                    <p class="text-lg font-semibold text-gray-800 mb-4">${message}</p>
+                    <button onclick="document.getElementById('customMessageBox').remove()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-colors">
+                        ตกลง
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(messageBox);
+        }
+    </script>
+</body>
+</html>
